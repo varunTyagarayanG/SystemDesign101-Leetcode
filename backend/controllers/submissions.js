@@ -1,5 +1,6 @@
-const Submission = require('../models/Submission');
-const { executeCode } = require('./codeExecution');
+const amqp = require('amqplib/callback_api');
+const { executeCode } = require('../controllers/codeExecution'); // Adjust path
+const Submission = require('../models/Submission'); // Adjust path
 
 const languageConfig = {
     python: {
@@ -29,22 +30,12 @@ const languageConfig = {
     },
 };
 
-exports.getSubmissionStatus = async (req, res) => {
-    try {
-        // Fetch all submissions with the given problemId
-        const submissions = await Submission.find({ problemId: req.params.problemId });
-        if (!submissions || submissions.length === 0) {
-            return res.status(404).json({ message: 'No submissions found for the given problemId' });
-        }
-        res.status(200).json(submissions); // Return all matching submissions
-    } catch (err) {
-        res.status(500).json({ message: 'Error fetching submissions', error: err.message });
-    }
-};
+// The route to submit the solution
 exports.submitSolution = async (req, res) => {
     try {
         const { code, language } = req.body;
-
+        const problemId  = req.params.id; // Get problemId from the route
+        console.log("Problem ID:", problemId);
         if (!code || !language) {
             return res.status(400).json({ message: 'Code and language are required' });
         }
@@ -53,34 +44,40 @@ exports.submitSolution = async (req, res) => {
             return res.status(400).json({ message: `Unsupported language: ${language}` });
         }
 
-        // Execute the code
-        const executionResult = await executeCode(code, language);
+        // Publish the code and language to the RabbitMQ queue along with problemId
+        amqp.connect('amqp://localhost', (error, connection) => {
+            if (error) {
+                return res.status(500).json({ message: 'Error connecting to RabbitMQ', error: error.message });
+            }
+            connection.createChannel((err, channel) => {
+                if (err) {
+                    return res.status(500).json({ message: 'Error creating RabbitMQ channel', error: err.message });
+                }
 
-        if (!executionResult) {
-            return res.status(400).json({ message: 'Error executing code' });
-        }
+                const queue = 'code_queue';
+                channel.assertQueue(queue, { durable: true });
 
-        // Clean the output by removing non-printable characters and trimming whitespace
-        const cleanedOutput = executionResult.output
-            .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters
-            .trim(); // Trim leading and trailing spaces
+                // Create a unique ID for this submission
+                const submissionId = Date.now().toString();
 
-        console.log("Cleaned Output:", cleanedOutput);
+                // Create the message object, including problemId
+                const message = JSON.stringify({
+                    submissionId,
+                    code,
+                    language,
+                    problemId, // Include problemId in the message
+                });
+                console.log("Submission message:", message);
+                // Send the message to the queue
+                channel.sendToQueue(queue, Buffer.from(message), { persistent: true });
 
-        const testCaseResults = "passed"; // Example test case result
+                // console.log(" [x] Sent to queue:", message);
 
-        // Save the submission to the database
-        const submission = await Submission.create({
-            problemId: req.params.id,
-            code,
-            language,
-            testCaseResults, // Modify based on actual test case evaluation
-        });
-
-        return res.status(201).json({
-            message: 'Submission received',
-            submissionId: submission._id,
-            executionResult: cleanedOutput, // Return the cleaned output
+                return res.status(201).json({
+                    message: 'Submission received and queued for execution',
+                    submissionId,
+                });
+            });
         });
     } catch (err) {
         console.error("Error submitting solution:", err);
