@@ -1,0 +1,16 @@
+# Node modules
+node_modules
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary files
+temp/
+
+# Environment variables
+.env
+
+# Docker
+docker-compose.override.yml
