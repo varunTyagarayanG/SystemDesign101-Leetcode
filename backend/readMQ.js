@@ -1,17 +1,12 @@
 const amqp = require('amqplib/callback_api');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const { executeCode } = require('./codeExecution'); // Adjust path
-const Submission = require('../models/Submission'); // Adjust path
+const { executeCode } = require('./controllers/codeExecution'); // Adjust path
+const Submission = require('./models/Submission'); // Adjust path
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Connect to MongoDB
-
-
-// Function to process code submissions
-const processCodeSubmission = async (submission) => {
+const processCodeSubmission = async (submission, channel, msg) => {
     try {
         console.log("Processing submission:", submission);
 
@@ -24,21 +19,26 @@ const processCodeSubmission = async (submission) => {
         const executionResult = await executeCode(submission.code, submission.language);
         console.log("Execution Result:", executionResult.output);
 
-        // Save the result
-        try {
-            const submissionRecord = await Submission.create({
-                problemId: submission.problemId,
-                code: submission.code,
-                executionResult: executionResult.output,
-            });
+        // Save the result to the database
+        const submissionRecord = await Submission.create({
+            problemId: submission.problemId,
+            code: submission.code,
+            executionResult: executionResult.output,
+        });
+
+        // Ensure the data is saved before acknowledging the message
+        if (submissionRecord) {
             console.log("Submission saved:", submissionRecord._id);
-        } catch (err) {
-            console.error("Error saving submission:", err.message);
+            // Acknowledge the message after the database save
+            channel.ack(msg);
+        } else {
+            throw new Error("Failed to save submission to the database");
         }
 
     } catch (error) {
         console.error("Error during processing:", error.message || error);
-        throw error;  // Re-throw error to ensure it can be caught in the consumer
+        // Optionally: Retry message after some time or dead-letter queue logic
+        channel.nack(msg, false, true); // Requeue the message for retry
     }
 };
 
@@ -75,11 +75,9 @@ const startConsumer = () => {
                         return;
                     }
 
-                    // Process the submission
+                    // Process the submission and check database before acknowledgment
                     try {
-                        await processCodeSubmission(submission);
-                        // Acknowledge the message after successful processing
-                        channel.ack(msg);
+                        await processCodeSubmission(submission, channel, msg);
                     } catch (err) {
                         console.error("Failed to process submission:", err.message || err);
                         // Optionally: Retry message after some time or dead-letter queue logic
@@ -91,14 +89,15 @@ const startConsumer = () => {
     });
 };
 
+
 // Start the database connection and RabbitMQ consumer
 (async () => {
     await mongoose
-    .connect("mongodb://0.0.0.0:27017/leetcode")
-    .then(() => {
-        console.log('Connected to MongoDB');
-    })
-    .catch((err) => console.error(err));
+        .connect("mongodb://0.0.0.0:27017/leetcode")
+        .then(() => {
+            console.log('Connected to MongoDB');
+        })
+        .catch((err) => console.error(err));
 
     startConsumer();
 })();

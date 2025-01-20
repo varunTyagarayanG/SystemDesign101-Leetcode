@@ -69,7 +69,7 @@ exports.submitSolution = async (req, res) => {
                 });
                 console.log("Submission message:", message);
                 // Send the message to the queue
-                channel.sendToQueue(queue, Buffer.from(message), { persistent: true });
+                channel.sendToQueue(queue, Buffer.from(message), { persistent: false });
 
                 // console.log(" [x] Sent to queue:", message);
 
