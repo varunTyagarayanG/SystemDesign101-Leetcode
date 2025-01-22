@@ -1,5 +1,5 @@
 
-# LeetCode Backend Scaling Showcase
+# LeetCode System Design
 
 This project demonstrates how LeetCode scales its backend using Docker, RabbitMQ, and language-specific containers. The system includes dynamic problem creation, code submission, and evaluation capabilities.
 
