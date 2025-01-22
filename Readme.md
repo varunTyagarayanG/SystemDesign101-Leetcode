@@ -1,5 +1,5 @@
 
-# LeetCode Backend Scaling Showcase
+# LeetCode System Design
 
 This project demonstrates how LeetCode scales its backend using Docker, RabbitMQ, and language-specific containers. The system includes dynamic problem creation, code submission, and evaluation capabilities.
 
@@ -85,7 +85,9 @@ http://localhost:5000/api/problems/create
 ```
 
 Once submitted, the problem will be saved in the database.
-![Problem Creation ](images\problem-creation.png)
+
+![Problem Creation](images/problem-creation.png)
+
 
 ---
 
@@ -105,7 +107,7 @@ http://localhost:5000/api/submissions/{problemId}/submit
     "language": "python"
 }
 ```
-[Video on Incorrect Submission results](images\incorrect-submission.mp4)
+[Video on Incorrect Submission results](images/incorrect-submission.mp4)
 
 
 #### Correct Code Submission
@@ -167,7 +169,7 @@ http://localhost:5000/api/submissions/{problemId}/submit
 - **Python**: Supported language for code evaluation.
 
 ---
-![Arch](images\Arch.png)
+![Arch](images/Arch.png)
 
 
 ## License
