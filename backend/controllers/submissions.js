@@ -1,47 +1,18 @@
 const amqp = require('amqplib/callback_api');
-const { executeCode } = require('../controllers/codeExecution'); // Adjust path
-const Submission = require('../models/Submission'); // Adjust path
-
-const languageConfig = {
-    python: {
-        image: "python:3.9-slim",
-        extension: "py",
-        command: ["python", "/code/temp_code.py"],
-    },
-    javascript: {
-        image: "node:16",
-        extension: "js",
-        command: ["node", "/code/temp_code.js"],
-    },
-    java: {
-        image: "openjdk:17-slim",
-        extension: "java",
-        command: ["bash", "-c", "javac /code/temp_code.java && java -cp /code temp_code"],
-    },
-    c: {
-        image: "gcc:latest",
-        extension: "c",
-        command: ["bash", "-c", "gcc /code/temp_code.c -o /code/temp_code && /code/temp_code"],
-    },
-    cpp: {
-        image: "gcc:latest",
-        extension: "cpp",
-        command: ["bash", "-c", "g++ /code/temp_code.cpp -o /code/temp_code && /code/temp_code"],
-    },
-};
+const { languageConfig } = require('../utils/languageConfig'); 
 
 // The route to submit the solution
 exports.submitSolution = async (req, res) => {
     try {
         const { code, language } = req.body;
-        const problemId  = req.params.id; // Get problemId from the route
+        const problemId  = req.params.id; 
         console.log("Problem ID:", problemId);
         if (!code || !language) {
             return res.status(400).json({ message: 'Code and language are required' });
         }
 
         if (!languageConfig[language]) {
-            return res.status(400).json({ message: `Unsupported language: ${language}` });
+            return res.status(400).json({ message: `Unsupported language : ${language}` });
         }
 
         // Publish the code and language to the RabbitMQ queue along with problemId
@@ -65,7 +36,7 @@ exports.submitSolution = async (req, res) => {
                     submissionId,
                     code,
                     language,
-                    problemId, // Include problemId in the message
+                    problemId, 
                 });
                 console.log("Submission message:", message);
                 // Send the message to the queue

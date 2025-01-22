@@ -14,6 +14,7 @@ const ProblemSchema = new mongoose.Schema({
         difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], required: true },
         tags: [String],
     },
+    mainCode: { type: String, required: true },
 });
 
 module.exports = mongoose.model('Problem', ProblemSchema);

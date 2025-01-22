@@ -16,9 +16,9 @@ const processCodeSubmission = async (submission, channel, msg) => {
         }
 
         // Execute the code
-        const executionResult = await executeCode(submission.code, submission.language);
+        const executionResult = await executeCode(submission.code, submission.language , submission.problemId);
         console.log("Execution Result:", executionResult.output);
-
+        console.log(executionResult.fullCode)
         // Save the result to the database
         const submissionRecord = await Submission.create({
             problemId: submission.problemId,
