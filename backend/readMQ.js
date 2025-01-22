@@ -1,8 +1,8 @@
 const amqp = require('amqplib/callback_api');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const { executeCode } = require('./controllers/codeExecution'); // Adjust path
-const Submission = require('./models/Submission'); // Adjust path
+const { executeCode } = require('./controllers/codeExecution'); 
+const Submission = require('./models/Submission'); 
 
 dotenv.config();
 
@@ -10,7 +10,6 @@ const processCodeSubmission = async (submission, channel, msg) => {
     try {
         console.log("Processing submission:", submission);
 
-        // Check if problemId exists
         if (!submission.problemId) {
             throw new Error("Missing required field: problemId");
         }
@@ -37,12 +36,10 @@ const processCodeSubmission = async (submission, channel, msg) => {
 
     } catch (error) {
         console.error("Error during processing:", error.message || error);
-        // Optionally: Retry message after some time or dead-letter queue logic
         channel.nack(msg, false, true); // Requeue the message for retry
     }
 };
 
-// RabbitMQ Consumer
 const startConsumer = () => {
     amqp.connect('amqp://localhost', (error0, connection) => {
         if (error0) {

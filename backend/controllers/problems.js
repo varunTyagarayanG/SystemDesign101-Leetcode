@@ -1,6 +1,5 @@
 const Problem = require('../models/Problem');
 
-// Get all problems
 exports.getProblems = async (req, res) => {
     try {
         const problems = await Problem.find();
@@ -10,7 +9,6 @@ exports.getProblems = async (req, res) => {
     }
 };
 
-// Get a single problem by ID
 exports.getProblem = async (req, res) => {
     try {
         const problem = await Problem.findById(req.params.id);
@@ -23,22 +21,18 @@ exports.getProblem = async (req, res) => {
     }
 };
 
-// Create a new problem
 exports.createProblem = async (req, res) => {
     try {
         const { title, description, codeStub, testCases, metadata } = req.body;
 
-        // Ensure that difficulty is part of metadata and tags are optional
         const { difficulty, tags } = metadata || {};
 
-        // Validate that all required fields are present
         if (!title || !description || !codeStub || !testCases || !difficulty) {
             return res.status(400).json({
                 message: 'Missing required fields: title, description, codeStub, testCases, and difficulty are required.',
             });
         }
 
-        // Define `mainCode` templates for various languages
         const mainCodeTemplates = {
             python: `
 if __name__ == '__main__':
